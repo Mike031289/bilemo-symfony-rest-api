@@ -12,7 +12,6 @@
 .env.dev.local
 .env.test.local
 .env.prod.local
-.env.dev
 ###< Environment configuration files ###
 
 ###> OS & IDEs (Keep repository clean) ###
