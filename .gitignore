@@ -25,3 +25,7 @@ Thumbs.db
 *.sln
 *.sw?
 ###< OS & IDEs ###
+
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###
