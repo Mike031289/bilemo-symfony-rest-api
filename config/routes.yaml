@@ -9,3 +9,7 @@
 
 controllers:
     resource: routing.controllers
+
+# API REST Login path
+api_login_check:
+    path: /api/login_check
