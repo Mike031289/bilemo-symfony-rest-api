@@ -1,35 +1,46 @@
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+    # Password hashing configuration
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+    # User provider (Where Symfony looks for B2B Clients)
     providers:
-        # used to reload user from session & other features (e.g. switch_user)
         app_user_provider:
             entity:
                 class: App\Entity\Client
                 property: username
 
+    # Firewalls configuration (Order is critical!)
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
+            # Ensure dev tools and static assets are always allowed without security
             pattern: ^/(_profiler|_wdt|assets|build)/
             security: false
-        main:
-            lazy: true
+
+        # FIREWALL 1: Dedicated to authentication and JWT token generation
+        login:
+            pattern: ^/api/login
+            stateless: true
             provider: app_user_provider
+            json_login:
+                check_path: /api/login_check
+                username_path: username
+                password_path: password
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
 
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
+        # FIREWALL 2: Main firewall protecting all other API resources by checking the JWT
+        api:
+            pattern: ^/api
+            stateless: true
+            jwt: ~
 
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
-
-    # Note: Only the *first* matching rule is applied
+    # Access control rules (Only the first matching rule is applied)
     access_control:
-        # - { path: ^/admin, roles: ROLE_ADMIN }
-        # - { path: ^/profile, roles: ROLE_USER }
+        # Login authentication endpoint must be publicly accessible
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        # All other API resources require an authenticated ROLE_USER
+        - { path: ^/api, roles: ROLE_USER }
 
 when@test:
     security:
