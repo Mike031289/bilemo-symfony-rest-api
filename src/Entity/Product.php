@@ -1,10 +1,12 @@
 <?php
+//src/Entity/Product.php
 
 namespace App\Entity;
 
 use App\Repository\ProductRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ProductRepository::class)]
 class Product
@@ -15,27 +17,41 @@ class Product
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "La marque du téléphone ne peut pas être vide.")]
+    #[Assert\Length(max: 255, maxMessage: "La marque ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $brand = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le modèle du téléphone ne peut pas être vide.")]
+    #[Assert\Length(max: 255, maxMessage: "Le modèle ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $model = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank(message: "La description du produit est obligatoire.")]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
+    #[Assert\NotBlank(message: "Le prix est obligatoire.")]
+    #[Assert\Positive(message: "Le prix doit être un montant supérieur à 0.")]
     private ?string $price = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: "Le stock ne peut pas être nul.")]
+    #[Assert\PositiveOrZero(message: "Le stock ne peut pas être négatif.")]
     private ?int $stock = null;
 
     #[ORM\Column]
+    #[Assert\NotNull(message: "La date de création est obligatoire.")]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "La couleur est obligatoire.")]
+    #[Assert\Length(max: 255, maxMessage: "La couleur ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $color = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "La capacité de stockage est obligatoire.")]
+    #[Assert\Length(max: 255, maxMessage: "La capacité de stockage ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $storage = null;
 
     public function getId(): ?int

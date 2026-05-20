@@ -1,4 +1,5 @@
 <?php
+//src/Entity/Client.php
 
 namespace App\Entity;
 
@@ -6,11 +7,14 @@ use App\Repository\ClientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ClientRepository::class)]
 #[ORM\UniqueConstraint(name: 'UNIQ_IDENTIFIER_USERNAME', fields: ['username'])]
+#[UniqueEntity(fields: ['username'], message: "Ce nom d'utilisateur est déjà utilisé par un autre client.")]
 class Client implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
@@ -19,6 +23,13 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
+    #[Assert\NotBlank(message: "L'identifiant de connexion est obligatoire.")]
+    #[Assert\Length(
+        min: 3,
+        max: 180,
+        minMessage: "L'identifiant doit faire au moins {{ limit }} caractères.",
+        maxMessage: "L'identifiant ne peut pas dépasser {{ limit }} caractères."
+    )]
     private ?string $username = null;
 
     /**
@@ -31,9 +42,12 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
      * @var string The hashed password
      */
     #[ORM\Column]
+    #[Assert\NotBlank(message: "Le mot de passe est obligatoire.")]
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank(message: "Le nom de l'entreprise est obligatoire.")]
+    #[Assert\Length(max: 255, maxMessage: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $companyName = null;
 
     /**
@@ -112,13 +126,13 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     }
 
     /**
-     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them, as supported since Symfony 7.3.
+     * Ensure the session doesn't contain actual password hashes by CRC32C-hashing them.
      */
     public function __serialize(): array
     {
         $data = (array) $this;
         $data["\0" . self::class . "\0password"] = hash('crc32c', $this->password);
-        
+
         return $data;
     }
 
