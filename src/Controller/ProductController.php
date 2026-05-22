@@ -3,6 +3,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -36,9 +37,32 @@ final class ProductController extends AbstractController
             'data' => $productList
         ];
 
+        // If data does not exist, throw a 404 error explicitly
+        if (!$responsedata['data']) {
+            return new JsonResponse(['message' => 'Products not found'], Response::HTTP_NOT_FOUND);
+        }
+
         // Serialize everything
         $jsonResponse = $serializer->serialize($responsedata, 'json');
 
         return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/products/{id}', name: 'app_product_detail', methods: ['GET'])]
+    public function getProductDetail(int $id, ProductRepository $productRepository, SerializerInterface $serializer): JsonResponse
+    {
+        // Manually fetch the product by its ID
+        $product = $productRepository->find($id);
+
+        // If the product does not exist, throw a 404 error explicitly
+        if (!$product) {
+            return new JsonResponse(['message' => 'Product not found'], Response::HTTP_NOT_FOUND);
+        }
+
+        // Convert the single Product object into a clean JSON string
+        $jsonProduct = $serializer->serialize($product, 'json');
+
+        // Return a 200 OK JsonResponse
+        return new JsonResponse($jsonProduct, Response::HTTP_OK, [], true);
     }
 }
