@@ -3,7 +3,6 @@
 
 namespace App\Controller;
 
-use App\Entity\Product;
 use App\Repository\ProductRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -27,7 +26,7 @@ final class ProductController extends AbstractController
         $totalItems = $productRepository->count([]);
 
         // Construct a standard meta response structure
-        $responsedata = [
+        $responseData = [
             'meta' => [
                 'current_page' => $page,
                 'limit' => $limit,
@@ -38,12 +37,12 @@ final class ProductController extends AbstractController
         ];
 
         // If data does not exist, throw a 404 error explicitly
-        if (!$responsedata['data']) {
+        if (!$responseData['data']) {
             return new JsonResponse(['message' => 'Products not found'], Response::HTTP_NOT_FOUND);
         }
 
         // Serialize everything
-        $jsonResponse = $serializer->serialize($responsedata, 'json');
+        $jsonResponse = $serializer->serialize($responseData, 'json');
 
         return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
     }
