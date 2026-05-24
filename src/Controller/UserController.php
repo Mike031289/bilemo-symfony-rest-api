@@ -13,6 +13,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class UserController extends AbstractController
 {
@@ -54,7 +55,8 @@ final class UserController extends AbstractController
     public function createUser(
         Request $request,
         SerializerInterface $serializer,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
     ): JsonResponse {
         // Get the currently authenticated B2B Client from the JWT token
         $currentClient = $this->getUser();
@@ -66,7 +68,14 @@ final class UserController extends AbstractController
         // Security & Business Logic: Forcefully link the new User to the authenticated Client
         $user->setClient($currentClient);
 
-        // TODO: Later on, we will inject ValidatorInterface here to validate constraints (email, firstname, etc.)
+        // 4. Validate the entity based on constraints defined in User.php
+            $errors = $validator->validate($user);
+
+            if ($errors->count() > 0) {
+                // If there are validation errors, serialize them and return an HTTP 400 Bad Request
+                $jsonErrors = $serializer->serialize($errors, 'json');
+                return new JsonResponse($jsonErrors, Response::HTTP_BAD_REQUEST, [], true);
+            }
 
         // Persist and flush the new entity into the database
         $em->persist($user);
