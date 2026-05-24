@@ -90,8 +90,10 @@ final class UserController extends AbstractController
 
     #[Route('/api/users/{id}', name: 'app_user_detail', methods: ['GET'])]
     #[IsGranted('CAN_SEE_USER', subject: 'user')]
-    public function getUserDetail(User $user, SerializerInterface $serializer): JsonResponse
-    {
+    public function getUserDetail(
+        User $user,
+        SerializerInterface $serializer
+    ): JsonResponse {
         // Note: Symfony automatically throws a 404 Not Found if the {id} does not exist in the database.
         // Note: The #[IsGranted] attribute automatically triggers UserVoter and throws a 403 Forbidden if access is denied.
 
@@ -99,5 +101,21 @@ final class UserController extends AbstractController
         $jsonUser = $serializer->serialize($user, 'json');
 
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/users/{id}', name: 'app_user_delete', methods: ['DELETE'])]
+    #[IsGranted('CAN_DELETE_USER', subject: 'user')]
+    public function deleteUser(
+        User $user,
+        EntityManagerInterface $em
+    ): JsonResponse {
+        // Remove the User entity from the database
+        $em->remove($user);
+
+        // Execute the DELETE query in the database
+        $em->flush();
+
+        // Returns a clean HTTP 204 No Content response to confirm successful deletion
+        return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
