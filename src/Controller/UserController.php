@@ -12,12 +12,17 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
 
 final class UserController extends AbstractController
 {
     #[Route('/api/users', name: 'app_user_list', methods: ['GET'])]
-    public function getUserList(UserRepository $userRepository, SerializerInterface $serializer, Request $request): JsonResponse
-    {
+    public function getUserList(
+        UserRepository $userRepository,
+        SerializerInterface $serializer,
+        Request $request
+    ): JsonResponse {
         // Get the currently authenticated B2B Client (from JWT token)
         $currentClient = $this->getUser();
 
@@ -44,6 +49,43 @@ final class UserController extends AbstractController
         $jsonUserList = $serializer->serialize($responseData, 'json');
 
         return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
+    }
+
+    #[Route('/api/users', name: 'app_user_create', methods: ['POST'])]
+    public function createUser(
+        Request $request,
+        SerializerInterface $serializer,
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
+    ): JsonResponse {
+        // Get the currently authenticated B2B Client from the JWT token
+        $currentClient = $this->getUser();
+
+        // Deserialize the incoming JSON payload directly into a User entity instance
+        /** @var User $user */
+        $user = $serializer->deserialize($request->getContent(), User::class, 'json');
+
+        // Security & Business Logic: Forcefully link the new User to the authenticated Client
+        $user->setClient($currentClient);
+
+        // 4. Validate the entity based on constraints defined in User.php
+            $errors = $validator->validate($user);
+
+            if ($errors->count() > 0) {
+                // If there are validation errors, serialize them and return an HTTP 400 Bad Request
+                $jsonErrors = $serializer->serialize($errors, 'json');
+                return new JsonResponse($jsonErrors, Response::HTTP_BAD_REQUEST, [], true);
+            }
+
+        // Persist and flush the new entity into the database
+        $em->persist($user);
+        $em->flush();
+
+        // Serialize the newly created user to return it in the response
+        $jsonUser = $serializer->serialize($user, 'json');
+
+        // Return a professional HTTP 201 Created response along with the resource data
+        return new JsonResponse($jsonUser, Response::HTTP_CREATED, [], true);
     }
 
     #[Route('/api/users/{id}', name: 'app_user_detail', methods: ['GET'])]
