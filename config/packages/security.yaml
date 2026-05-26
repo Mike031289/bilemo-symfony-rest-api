@@ -19,11 +19,11 @@ security:
 
         # FIREWALL 1: Dedicated to authentication and JWT token generation
         login:
-            pattern: ^/api/login
+            pattern: ^/login
             stateless: true
             provider: app_user_provider
             json_login:
-                check_path: /api/login_check
+                check_path: /login_check
                 username_path: username
                 password_path: password
                 success_handler: lexik_jwt_authentication.handler.authentication_success
@@ -31,16 +31,16 @@ security:
 
         # FIREWALL 2: Main firewall protecting all other API resources by checking the JWT
         api:
-            pattern: ^/api
+            pattern: ^/
             stateless: true
             jwt: ~
 
     # Access control rules (Only the first matching rule is applied)
     access_control:
         # Login authentication endpoint must be publicly accessible
-        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/login_check, roles: PUBLIC_ACCESS }
         # All other API resources require an authenticated ROLE_USER
-        - { path: ^/api, roles: ROLE_USER }
+        - { path: ^/, roles: ROLE_USER }
 
 when@test:
     security:
