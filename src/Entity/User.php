@@ -8,6 +8,9 @@ use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Serializer\Annotation\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Serializer\Attribute\Context;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Normalizer\DateTimeNormalizer;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity(fields: ['email'], message: "Cette adresse email est déjà utilisée par un autre utilisateur.")]
@@ -16,10 +19,12 @@ class User
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['user:read'])]
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le prénom est obligatoire.")]
+    #[Groups(['user:read'])]
     #[Assert\Length(
         min: 2,
         max: 255,
@@ -30,6 +35,7 @@ class User
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le nom de famille est obligatoire.")]
+    #[Groups(['user:read'])]
     #[Assert\Length(
         min: 2,
         max: 255,
@@ -40,11 +46,16 @@ class User
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "L'adresse email est obligatoire.")]
+    #[Groups(['user:read'])]
     #[Assert\Email(message: "L'adresse email '{{ value }}' n'est pas une adresse valide.")]
     private ?string $email = null;
 
     #[ORM\Column]
     #[Assert\NotNull(message: "La date de création est obligatoire.")]
+    #[Context(
+        normalizationContext: [DateTimeNormalizer::FORMAT_KEY => 'd-m-Y H:i:s'],
+        denormalizationContext: [DateTimeNormalizer::FORMAT_KEY => \DateTime::RFC3339],
+    )]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'users')]

@@ -13,7 +13,7 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 final class ProductController extends AbstractController
 {
-    #[Route('/api/products', name: 'app_product_list', methods: ['GET'])]
+    #[Route('/products', name: 'app_product_list', methods: ['GET'])]
     public function getProductList(ProductRepository $productRepository, SerializerInterface $serializer, Request $request): JsonResponse
     {
         $page = $request->query->getInt('page', 1);
@@ -42,12 +42,12 @@ final class ProductController extends AbstractController
         }
 
         // Serialize everything
-        $jsonResponse = $serializer->serialize($responseData, 'json');
+        $jsonResponse = $serializer->serialize($responseData, 'json', ['groups' => ['product:read']]);
 
         return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/api/products/{id}', name: 'app_product_detail', methods: ['GET'])]
+    #[Route('/products/{id}', name: 'app_product_detail', methods: ['GET'])]
     public function getProductDetail(int $id, ProductRepository $productRepository, SerializerInterface $serializer): JsonResponse
     {
         // Manually fetch the product by its ID
@@ -59,7 +59,7 @@ final class ProductController extends AbstractController
         }
 
         // Convert the single Product object into a clean JSON string
-        $jsonProduct = $serializer->serialize($product, 'json');
+        $jsonProduct = $serializer->serialize($product, 'json', ['groups' => ['product:read']]);
 
         // Return a 200 OK JsonResponse
         return new JsonResponse($jsonProduct, Response::HTTP_OK, [], true);
