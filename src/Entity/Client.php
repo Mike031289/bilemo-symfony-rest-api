@@ -7,6 +7,7 @@ use App\Repository\ClientRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -20,6 +21,7 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
+    #[Groups(['client:read'])] // Safe to expose
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
@@ -46,6 +48,7 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
+    #[Groups(['client:read'])] // Safe to expose
     #[Assert\NotBlank(message: "Le nom de l'entreprise est obligatoire.")]
     #[Assert\Length(max: 255, maxMessage: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $companyName = null;
