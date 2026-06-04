@@ -58,8 +58,8 @@ class User
     )]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'users')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'users')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "L'utilisateur doit obligatoirement être rattaché à un client.")]
     #[Ignore] // <-- This will prevent the client relationship from being serialized in API responses, which is a common practice to avoid circular references and sensitive data exposure.
     private ?Client $client = null;
