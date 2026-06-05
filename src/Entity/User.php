@@ -1,12 +1,11 @@
 <?php
-//src/Entity/User.php
+// src/Entity/User.php
 
 namespace App\Entity;
 
 use App\Repository\UserRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
-use Symfony\Component\Serializer\Annotation\Ignore;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Serializer\Attribute\Context;
 use Symfony\Component\Serializer\Attribute\Groups;
@@ -52,16 +51,21 @@ class User
 
     #[ORM\Column]
     #[Assert\NotNull(message: "La date de création est obligatoire.")]
+    #[Groups(['user:read'])] // Incorporated into standard reads for record-tracking purposes
     #[Context(
         normalizationContext: [DateTimeNormalizer::FORMAT_KEY => 'd-m-Y H:i:s'],
         denormalizationContext: [DateTimeNormalizer::FORMAT_KEY => \DateTime::RFC3339],
     )]
     private ?\DateTimeImmutable $createdAt = null;
 
+    /**
+     * Explicit relationship linking the User to its single B2B Client owner.
+     * Uses serialization groups to avoid circular dependencies while allowing targeted contextual embedding.
+     */
     #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "L'utilisateur doit obligatoirement être rattaché à un client.")]
-    #[Ignore] // <-- This will prevent the client relationship from being serialized in API responses, which is a common practice to avoid circular references and sensitive data exposure.
+    #[Groups(['client:read'])] // Triggers nested normalization safely when 'client:read' group is explicitly supplied
     private ?Client $client = null;
 
     public function getId(): ?int

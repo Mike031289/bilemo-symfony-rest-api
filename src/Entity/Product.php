@@ -1,5 +1,5 @@
 <?php
-//src/Entity/Product.php
+// src/Entity/Product.php
 
 namespace App\Entity;
 
@@ -17,35 +17,35 @@ class Product
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])] // Exposed in root product catalogs and client details payload sub-lists
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "La marque du téléphone ne peut pas être vide.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\Length(max: 255, maxMessage: "La marque ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $brand = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le modèle du téléphone ne peut pas être vide.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\Length(max: 255, maxMessage: "Le modèle ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $model = null;
 
     #[ORM\Column(type: Types::TEXT)]
     #[Assert\NotBlank(message: "La description du produit est obligatoire.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 0)]
     #[Assert\NotBlank(message: "Le prix est obligatoire.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\Positive(message: "Le prix doit être un montant supérieur à 0.")]
     private ?string $price = null;
 
     #[ORM\Column]
     #[Assert\NotNull(message: "Le stock ne peut pas être nul.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\PositiveOrZero(message: "Le stock ne peut pas être négatif.")]
     private ?int $stock = null;
 
@@ -55,19 +55,28 @@ class Product
         normalizationContext: [DateTimeNormalizer::FORMAT_KEY => 'd-m-Y H:i:s'],
         denormalizationContext: [DateTimeNormalizer::FORMAT_KEY => \DateTime::RFC3339],
     )]
+    #[Groups(['client:detail'])] // Prevents bloated output on regular product lists
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "La couleur est obligatoire.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\Length(max: 255, maxMessage: "La couleur ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $color = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "La capacité de stockage est obligatoire.")]
-    #[Groups(['product:read'])]
+    #[Groups(['product:read', 'client:detail'])]
     #[Assert\Length(max: 255, maxMessage: "La capacité de stockage ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $storage = null;
+
+    /**
+     * Each Product belongs strictly to one Client owner.
+     * Excluded from serialization groups to prevent exposing client contexts on broad product catalogs.
+     */
+    #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'products')]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
+    private ?Client $client = null;
 
     public function getId(): ?int
     {
@@ -166,6 +175,18 @@ class Product
     public function setStorage(string $storage): static
     {
         $this->storage = $storage;
+
+        return $this;
+    }
+
+    public function getClient(): ?Client
+    {
+        return $this->client;
+    }
+
+    public function setClient(?Client $client): static
+    {
+        $this->client = $client;
 
         return $this;
     }

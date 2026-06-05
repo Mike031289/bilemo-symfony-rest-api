@@ -1,5 +1,5 @@
 <?php
-//src/Entity/Client.php
+// src/Entity/Client.php
 
 namespace App\Entity;
 
@@ -21,7 +21,7 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['client:read'])] // Safe to expose
+    #[Groups(['client:read', 'client:detail'])] // Safe to expose in user contexts and dedicated client detail views
     private ?int $id = null;
 
     #[ORM\Column(length: 180)]
@@ -48,20 +48,30 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
     private ?string $password = null;
 
     #[ORM\Column(length: 255)]
-    #[Groups(['client:read'])] // Safe to expose
+    #[Groups(['client:read', 'client:detail'])] // Exposes business name safely without leaking operational credentials
     #[Assert\NotBlank(message: "Le nom de l'entreprise est obligatoire.")]
     #[Assert\Length(max: 255, maxMessage: "Le nom de l'entreprise ne peut pas dépasser {{ limit }} caractères.")]
     private ?string $companyName = null;
 
     /**
+     * One B2B Client manages multiple final Users.
      * @var Collection<int, User>
      */
     #[ORM\OneToMany(targetEntity: User::class, mappedBy: 'client', orphanRemoval: true)]
     private Collection $users;
 
+    /**
+     * One B2B Client owns a collection of specific catalog Products.
+     * @var Collection<int, Product>
+     */
+    #[ORM\OneToMany(targetEntity: Product::class, mappedBy: 'client', orphanRemoval: true)]
+    #[Groups(['client:detail'])] // Serializes the linked products only when requesting specific client details
+    private Collection $products;
+
     public function __construct()
     {
         $this->users = new ArrayCollection();
+        $this->products = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -181,6 +191,36 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
             // set the owning side to null (unless already changed)
             if ($user->getClient() === $this) {
                 $user->setClient(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Product>
+     */
+    public function getProducts(): Collection
+    {
+        return $this->products;
+    }
+
+    public function addProduct(Product $product): static
+    {
+        if (!$this->products->contains($product)) {
+            $this->products->add($product);
+            $product->setClient($this);
+        }
+
+        return $this;
+    }
+
+    public function removeProduct(Product $product): static
+    {
+        if ($this->products->removeElement($product)) {
+            // set the owning side to null (unless already changed)
+            if ($product->getClient() === $this) {
+                $product->setClient(null);
             }
         }
 
