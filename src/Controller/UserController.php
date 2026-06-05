@@ -14,7 +14,6 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Serializer\Normalizer\NormalizerInterface;
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
@@ -28,7 +27,6 @@ final class UserController extends AbstractController
     public function getUserList(
         Request $request,
         UserRepository $userRepository,
-        NormalizerInterface $normalizer,
         SerializerInterface $serializer,
         PaginatedCollectionNormalizer $paginatedNormalizer
     ): JsonResponse {
@@ -36,58 +34,51 @@ final class UserController extends AbstractController
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 5);
 
-        // SECURITY ANTI-DOS: Prevent client from requesting an abusive limit amount
+        // SECURITY ANTI-DOS: Prevent clients from requesting an abusive limit amount
         if ($limit > 50) {
             $limit = 50;
         }
-        // Force positive integers for page and limit
+
+        // Force positive integers for page and limit parameters
         $page = $page < 1 ? 1 : $page;
         $limit = $limit < 1 ? 5 : $limit;
 
-        // Retrieve the currently logged-in B2B Client entity instance
         /** @var Client $currentClient */
         $currentClient = $this->getUser();
 
-        // Fetch custom paginated data set from repository layer
+        // Fetch custom paginated dataset from the repository layer
         $paginatedData = $userRepository->findPaginatedUsersByClient($currentClient, $page, $limit);
 
-        // 1. Extract users safely (handles both structured array and flat array)
+        // Extract raw entities safely (handles both structured array envelopes and flat arrays)
         $users = $paginatedData['results'] ?? $paginatedData;
 
-        // 2. Compute total record count safely by falling back to a dedicated query if missing
+        // Compute total record count safely by falling back to a dedicated query count if missing
         $totalItems = $paginatedData['total'] ?? $userRepository->countByClient($currentClient);
         $totalPages = (int) ceil($totalItems / $limit);
 
-        // 3. Manually normalize each User entity to avoid circular reference loops.
-        // This explicitly triggers your UserNormalizer, appending self/update/delete links to every item.
-        $normalizedUsers = [];
-        foreach ($users as $user) {
-            $normalizedUsers[] = $normalizer->normalize($user, 'json', ['groups' => 'user:read']);
-        }
-
-        // 4. Normalize the authenticated client details using a safe normalization group.
-        // Make sure to configure 'client:read' annotations in your Client entity to prevent leaks.
-        $normalizedClient = $normalizer->normalize($currentClient, 'json', ['groups' => 'client:read']);
-
-        // 5. Wrap the dataset inside our standardized pagination layout envelope, adding the client context
-        $responseData = [
+        // 1. Serialize the data envelope using 'user:read' for data (ignoring nested client duplication)
+        // while including 'client:read' explicitly for the global metadata block context
+        $serializedData = $serializer->serialize([
             'meta' => [
                 'current_page' => $page,
                 'limit' => $limit,
                 'total_items' => $totalItems,
                 'total_pages' => $totalPages,
-                'client' => $normalizedClient
+                'client' => $currentClient
             ],
-            'data' => $normalizedUsers
-        ];
+            'data' => $users
+        ], 'json', [
+            'groups' => ['user:read', 'client:read']
+        ]);
 
-        // 6. Inject root-level collection navigation hypermedia links (_links: first, last, next, prev)
-        $finalPayload = $paginatedNormalizer->normalize($responseData, 'json');
+        // 2. Decode the JSON back into a native array structure to safely inject root-level links
+        $arrayData = json_decode($serializedData, true);
 
-        // 7. Transform the final complete data structure into raw JSON string safely
-        $jsonResponse = $serializer->serialize($finalPayload, 'json');
+        // 3. Explicitly execute the PaginatedCollectionNormalizer to inject collection and client hypermedia controls
+        $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
-        return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
+        // 4. Return the fully compliant HATEOAS collection response
+        return new JsonResponse($finalPayload, Response::HTTP_OK);
     }
 
     /**
