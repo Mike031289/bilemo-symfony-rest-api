@@ -18,12 +18,12 @@ class User
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:detail'])] // Exposed in user lists and client details payload sub-lists
     private ?int $id = null;
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le prénom est obligatoire.")]
-    #[Groups(['user:read'])]
+    #[Groups(['user:read', 'user:detail'])]
     #[Assert\Length(
         min: 2,
         max: 255,
@@ -34,7 +34,7 @@ class User
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "Le nom de famille est obligatoire.")]
-    #[Groups(['user:read'])]
+    #[Groups(['user:detail'])] // Exposed in user lists and client details payload sub-lists
     #[Assert\Length(
         min: 2,
         max: 255,
@@ -45,13 +45,13 @@ class User
 
     #[ORM\Column(length: 255)]
     #[Assert\NotBlank(message: "L'adresse email est obligatoire.")]
-    #[Groups(['user:read'])]
+    #[Groups(['user:detail'])]
     #[Assert\Email(message: "L'adresse email '{{ value }}' n'est pas une adresse valide.")]
     private ?string $email = null;
 
     #[ORM\Column]
     #[Assert\NotNull(message: "La date de création est obligatoire.")]
-    #[Groups(['user:read'])] // Incorporated into standard reads for record-tracking purposes
+    #[Groups(['user:detail'])] // Incorporated into standard reads for record-tracking purposes
     #[Context(
         normalizationContext: [DateTimeNormalizer::FORMAT_KEY => 'd-m-Y H:i:s'],
         denormalizationContext: [DateTimeNormalizer::FORMAT_KEY => \DateTime::RFC3339],
