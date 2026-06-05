@@ -22,28 +22,29 @@ class UserNormalizer implements NormalizerInterface
     ) {}
 
     /**
-     * Transforms a single User entity object into an array structure enriched with item-level HATEOAS links.
+     * Transforms a single User entity object into an array structure enriched with standardized HATEOAS links.
      *
      * @param User $object The User entity instance to map.
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
-        // Prevent infinite recursion loops if this normalizer gets cross-triggered downstream
         $context[self::class . '_ALREADY_CALLED'] = true;
 
         // 1. Delegate core properties normalization to the native platform ObjectNormalizer
         $normalizedData = $this->normalizer->normalize($object, $format, $context);
 
-        // 2. Resolve current request footprint to safeguard URL generation context
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
             return $normalizedData;
         }
 
-        // 3. Inject item-specific hypermedia controls matching Richardson Maturity Level 3
+        // 2. Define standard item links (Self always maps back to its precise singular resource URI)
         $normalizedData['_links'] = [
             'self' => [
                 'href' => $this->router->generate('app_user_detail', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+            ],
+            'users' => [
+                'href' => $this->router->generate('app_user_list', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'update' => [
                 'href' => $this->router->generate('app_user_edit', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
@@ -53,12 +54,10 @@ class UserNormalizer implements NormalizerInterface
             ]
         ];
 
-        // 4. Standarized Clean-up: If a client context exists on a item profile view, map its hypermedia
-        // pointer explicitly inside the root '_links' block instead of rendering duplicate embedded arrays
-        if ($object->getClient()) {
+        // 3. Inject B2B Client contextual pointer if the relation is defined on the entity object
+        if (method_exists($object, 'getClient') && $object->getClient()) {
             $normalizedData['_links']['client'] = [
                 'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
-                // Note: Update 'app_client_profile' route name to your specific B2B Client profile route if applicable
             ];
         }
 
@@ -70,7 +69,6 @@ class UserNormalizer implements NormalizerInterface
      */
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
     {
-        // Execute only if data is a User instance and hasn't been processed by this class yet
         return $data instanceof User && !isset($context[self::class . '_ALREADY_CALLED']);
     }
 
@@ -80,7 +78,7 @@ class UserNormalizer implements NormalizerInterface
     public function getSupportedTypes(?string $format): array
     {
         return [
-            User::class => true, // Tells Symfony that this normalizer is strictly caching-optimized for User objects
+            User::class => true,
         ];
     }
 }
