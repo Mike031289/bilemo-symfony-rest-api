@@ -12,14 +12,15 @@ use Symfony\Component\Serializer\SerializerInterface;
 
 final class ClientController extends AbstractController
 {
+    /**
+     * Retrieve details and automated HATEOAS navigation controls for the authenticated Client session.
+     */
     #[Route('/profile', name: 'app_client_profile', methods: ['GET'])]
     public function getProfile(SerializerInterface $serializer): JsonResponse
     {
-        // Get the currently authenticated B2B Client (from JWT token)
         /** @var Client|null $currentClient */
         $currentClient = $this->getUser();
 
-        // Safety fallback check in case security execution context misfires
         if (!$currentClient) {
             return new JsonResponse(
                 ['message' => 'JWT Token validation failed or user context missing.'],
@@ -27,7 +28,7 @@ final class ClientController extends AbstractController
             );
         }
 
-        // Serialize the single Client object into JSON
+        // The serializer engine automatically cascades normalization through ClientNormalizer
         $jsonClient = $serializer->serialize($currentClient, 'json', ['groups' => ['client:read']]);
 
         return new JsonResponse($jsonClient, Response::HTTP_OK, [], true);
