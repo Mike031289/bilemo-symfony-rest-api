@@ -29,7 +29,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         if (isset($meta['client']) && is_array($meta['client'])) {
             $meta['client']['_links'] = [
                 'self' => [
-                    'href' => $this->router->generate('app_user_list', [], UrlGeneratorInterface::ABSOLUTE_URL)
+                    'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
                 ]
             ];
         }

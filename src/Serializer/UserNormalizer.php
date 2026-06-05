@@ -57,8 +57,8 @@ class UserNormalizer implements NormalizerInterface
         // pointer explicitly inside the root '_links' block instead of rendering duplicate embedded arrays
         if ($object->getClient()) {
             $normalizedData['_links']['client'] = [
-                'href' => $this->router->generate('app_user_list', [], UrlGeneratorInterface::ABSOLUTE_URL)
-                // Note: Update 'app_user_list' route name to your specific B2B Client profile route if applicable
+                'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
+                // Note: Update 'app_client_profile' route name to your specific B2B Client profile route if applicable
             ];
         }
 
