@@ -21,7 +21,7 @@ class UserRepository extends ServiceEntityRepository
     /**
      * Fetches a paginated list of users belonging to a specific B2B client
      */
-    public function findByClientWithPagination(UserInterface $client, int $page, int $limit): array
+    public function findPaginatedUsersByClient(UserInterface $client, int $page, int $limit): array
     {
         return $this->createQueryBuilder('u')
             ->andWhere('u.client = :client')

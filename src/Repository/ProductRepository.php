@@ -18,14 +18,27 @@ class ProductRepository extends ServiceEntityRepository
     }
 
     /**
-     * Fetches a paginated list of products using OFFSET and LIMIT
+     * Fetches a paginated slice of available products matching controller naming expectations.
+     *
+     * @return Product[]
      */
-    public function findAllWithPagination(int $page, int $limit): array
+    public function findPaginatedProducts(int $page, int $limit): array
     {
         return $this->createQueryBuilder('p')
-            ->setFirstResult(($page - 1) * $limit) // Offset calculation
-            ->setMaxResults($limit)                // Limit criteria
+            ->setFirstResult(($page - 1) * $limit) // Offset boundary calculation
+            ->setMaxResults($limit)                // Strict range limits
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Computes total catalog record capacity for pagination metadata blocks.
+     */
+    public function countAllProducts(): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

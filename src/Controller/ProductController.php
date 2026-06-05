@@ -3,65 +3,85 @@
 
 namespace App\Controller;
 
+use App\Entity\Product;
+use App\Entity\Client;
 use App\Repository\ProductRepository;
+use App\Serializer\PaginatedCollectionNormalizer;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
-use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Serializer\SerializerInterface;
 
+#[Route('/products')]
 final class ProductController extends AbstractController
 {
-    #[Route('/products', name: 'app_product_list', methods: ['GET'])]
-    public function getProductList(ProductRepository $productRepository, SerializerInterface $serializer, Request $request): JsonResponse
-    {
+    /**
+     * Fetch a paginated list of available mobile products with root HATEOAS collection links
+     * and authenticated client context metadata.
+     */
+    #[Route('', name: 'app_product_list', methods: ['GET'])]
+    public function getProductList(
+        ProductRepository $productRepository,
+        SerializerInterface $serializer,
+        PaginatedCollectionNormalizer $paginatedNormalizer,
+        Request $request
+    ): JsonResponse {
+        // Extract pagination query parameters with default fallbacks
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 5);
 
-        // Fetch paginated products
-        $productList = $productRepository->findAllWithPagination($page, $limit);
+        // SECURITY ANTI-DOS: Prevent clients from requesting an abusive limit amount
+        if ($limit > 50) {
+            $limit = 50;
+        }
 
-        // Count total items in database (Crucial for frontend clients)
-        $totalItems = $productRepository->count([]);
+        // Force positive integers for page and limit parameters
+        $page = $page < 1 ? 1 : $page;
+        $limit = $limit < 1 ? 5 : $limit;
 
-        // Construct a standard meta response structure
-        $responseData = [
+        /** @var Client $currentClient */
+        $currentClient = $this->getUser();
+
+        // Fetch products and computed boundaries from the repository layer
+        $products = $productRepository->findPaginatedProducts($page, $limit);
+        $totalItems = $productRepository->countAllProducts();
+        $totalPages = (int) ceil($totalItems / $limit);
+
+        // 1. Serialize the data envelope including the current authenticated B2B client context.
+        // Explicitly pass 'client:read' group to allow client primitive properties normalization.
+        $serializedData = $serializer->serialize([
             'meta' => [
                 'current_page' => $page,
                 'limit' => $limit,
                 'total_items' => $totalItems,
-                'total_pages' => ceil($totalItems / $limit)
+                'total_pages' => $totalPages,
+                'client' => $currentClient
             ],
-            'data' => $productList
-        ];
+            'data' => $products
+        ], 'json', ['groups' => ['product:read', 'client:read']]);
 
-        // If data does not exist, throw a 404 error explicitly
-        if (!$responseData['data']) {
-            return new JsonResponse(['message' => 'Products not found'], Response::HTTP_NOT_FOUND);
-        }
+        // 2. Decode the JSON string back into a native array structure to safely append root-level controls
+        $arrayData = json_decode($serializedData, true);
 
-        // Serialize everything
-        $jsonResponse = $serializer->serialize($responseData, 'json', ['groups' => ['product:read']]);
+        // 3. Explicitly execute the PaginatedCollectionNormalizer to inject collection and client hypermedia controls
+        $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
-        return new JsonResponse($jsonResponse, Response::HTTP_OK, [], true);
+        return new JsonResponse($finalPayload, Response::HTTP_OK);
     }
 
-    #[Route('/products/{id}', name: 'app_product_detail', methods: ['GET'])]
-    public function getProductDetail(int $id, ProductRepository $productRepository, SerializerInterface $serializer): JsonResponse
-    {
-        // Manually fetch the product by its ID
-        $product = $productRepository->find($id);
+    /**
+     * Retrieve precise details of a single catalog product.
+     */
+    #[Route('/{id}', name: 'app_product_detail', methods: ['GET'])]
+    public function getProductDetail(
+        Product $product,
+        SerializerInterface $serializer
+    ): JsonResponse {
+        // Direct serialization delegates execution dynamically via context routing checks inside ProductNormalizer
+        $jsonProduct = $serializer->serialize($product, 'json', ['groups' => ['product:detail']]);
 
-        // If the product does not exist, throw a 404 error explicitly
-        if (!$product) {
-            return new JsonResponse(['message' => 'Product not found'], Response::HTTP_NOT_FOUND);
-        }
-
-        // Convert the single Product object into a clean JSON string
-        $jsonProduct = $serializer->serialize($product, 'json', ['groups' => ['product:read']]);
-
-        // Return a 200 OK JsonResponse
         return new JsonResponse($jsonProduct, Response::HTTP_OK, [], true);
     }
 }

@@ -4,7 +4,10 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Entity\Client;
 use App\Repository\UserRepository;
+use App\Serializer\PaginatedCollectionNormalizer;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,153 +15,154 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Serializer\SerializerInterface;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
+#[Route('/users')]
 final class UserController extends AbstractController
 {
-    #[Route('/users', name: 'app_user_list', methods: ['GET'])]
+    /**
+     * Fetch a paginated list of users linked to the authenticated B2B client.
+     */
+    #[Route('', name: 'app_user_list', methods: ['GET'])]
     public function getUserList(
+        Request $request,
         UserRepository $userRepository,
         SerializerInterface $serializer,
-        Request $request
+        PaginatedCollectionNormalizer $paginatedNormalizer
     ): JsonResponse {
-        // Get the currently authenticated B2B Client (from JWT token)
-        $currentClient = $this->getUser();
-
-        // Extract pagination parameters from query string
+        // Extract pagination query parameters with default fallbacks
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 5);
 
-        // Fetch ONLY the users belonging to this specific client
-        $userList = $userRepository->findByClientWithPagination($currentClient, $page, $limit);
-        $totalItems = $userRepository->countByClient($currentClient);
+        // SECURITY ANTI-DOS: Prevent clients from requesting an abusive limit amount
+        if ($limit > 50) {
+            $limit = 50;
+        }
 
-        // Construct the professional response structure with metadata
-        $responseData = [
+        // Force positive integers for page and limit parameters
+        $page = $page < 1 ? 1 : $page;
+        $limit = $limit < 1 ? 5 : $limit;
+
+        /** @var Client $currentClient */
+        $currentClient = $this->getUser();
+
+        // Fetch custom paginated dataset from the repository layer
+        $paginatedData = $userRepository->findPaginatedUsersByClient($currentClient, $page, $limit);
+
+        // Extract raw entities safely (handles both structured array envelopes and flat arrays)
+        $users = $paginatedData['results'] ?? $paginatedData;
+
+        // Compute total record count safely by falling back to a dedicated query count if missing
+        $totalItems = $paginatedData['total'] ?? $userRepository->countByClient($currentClient);
+        $totalPages = (int) ceil($totalItems / $limit);
+
+        // 1. Serialize the data envelope using 'user:read' for data (ignoring nested client duplication)
+        // while including 'client:read' explicitly for the global metadata block context
+        $serializedData = $serializer->serialize([
             'meta' => [
                 'current_page' => $page,
                 'limit' => $limit,
                 'total_items' => $totalItems,
-                'total_pages' => ceil($totalItems / $limit)
+                'total_pages' => $totalPages,
+                'client' => $currentClient
             ],
-            'data' => $userList
-        ];
+            'data' => $users
+        ], 'json', [
+            'groups' => ['user:read', 'client:read']
+        ]);
 
-        // Serialize and return : Process JSON serialization if both checks passed
-        $jsonUserList = $serializer->serialize($responseData, 'json', ['groups' => ['user:read']]);
+        // 2. Decode the JSON back into a native array structure to safely inject root-level links
+        $arrayData = json_decode($serializedData, true);
 
-        return new JsonResponse($jsonUserList, Response::HTTP_OK, [], true);
+        // 3. Explicitly execute the PaginatedCollectionNormalizer to inject collection and client hypermedia controls
+        $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
+
+        // 4. Return the fully compliant HATEOAS collection response
+        return new JsonResponse($finalPayload, Response::HTTP_OK);
     }
 
-    #[Route('/users', name: 'app_user_create', methods: ['POST'])]
+    /**
+     * Retrieve details of a single user.
+     */
+    #[Route('/{id}', name: 'app_user_detail', methods: ['GET'])]
+    #[IsGranted('CAN_SEE_USER', subject: 'user')]
+    public function getUserDetail(User $user, SerializerInterface $serializer): JsonResponse
+    {
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' =>'user:detail']);
+        return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+    }
+
+    /**
+     * Register and bind a new final user to the logged-in client.
+     */
+    #[Route('', name: 'app_user_create', methods: ['POST'])]
     public function createUser(
         Request $request,
         SerializerInterface $serializer,
         EntityManagerInterface $em,
         ValidatorInterface $validator
     ): JsonResponse {
-        // Get the currently authenticated B2B Client from the JWT token
-        $currentClient = $this->getUser();
-
-        // Deserialize the incoming JSON payload directly into a User entity instance
         /** @var User $user */
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
 
-        // Security & Business Logic: Forcefully link the new User to the authenticated Client
-        $user->setClient($currentClient);
+        // Auto-assign the authenticated B2B Client as the owner of this user record
+        $user->setClient($this->getUser());
 
-        // 4. Validate the entity based on constraints defined in User.php
-            $errors = $validator->validate($user);
+        // Validate entity constraints
+        $errors = $validator->validate($user);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
+        }
 
-            if ($errors->count() > 0) {
-                // If there are validation errors, serialize them and return an HTTP 400 Bad Request
-                $jsonErrors = $serializer->serialize($errors, 'json');
-                return new JsonResponse($jsonErrors, Response::HTTP_BAD_REQUEST, [], true);
-            }
-
-        // Persist and flush the new entity into the database
         $em->persist($user);
         $em->flush();
 
-        // Serialize the newly created user to return it in the response
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => ['user:read']]);
-
-        // Return a professional HTTP 201 Created response along with the resource data
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:detail']);
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, [], true);
     }
 
-    #[Route('/users/{id}', name: 'app_user_detail', methods: ['GET'])]
-    #[IsGranted('CAN_SEE_USER', subject: 'user')]
-    public function getUserDetail(
-        User $user,
-        SerializerInterface $serializer
-    ): JsonResponse {
-        // Note: Symfony automatically throws a 404 Not Found if the {id} does not exist in the database.
-        // Note: The #[IsGranted] attribute automatically triggers UserVoter and throws a 403 Forbidden if access is denied.
-
-        // Serialize the single User object into JSON
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => ['user:read']]);
-
-        return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
-    }
-
-    #[Route('/users/{id}', name: 'app_user_edit', methods: ['PUT', 'PATCH'])]
+    /**
+     * Update an existing user record using partial or full payload hydration.
+     */
+    #[Route('/{id}', name: 'app_user_edit', methods: ['PUT', 'PATCH'])]
     #[IsGranted('CAN_EDIT_USER', subject: 'user')]
     public function editUser(
         User $user,
         Request $request,
         SerializerInterface $serializer,
-        ValidatorInterface $validator,
-        EntityManagerInterface $em
+        EntityManagerInterface $em,
+        ValidatorInterface $validator
     ): JsonResponse {
-        // Note: Symfony automatically throws a 404 Not Found if the {id} does not exist in the database.
-        // Note: The #[IsGranted] attribute automatically triggers UserVoter and throws a 403 Forbidden if access is denied.
-
-        // Use deserialize with object_to_populate to update existing entity
-        $jsonContent = $request->getContent();
-        if (empty($jsonContent)) {
-            return new JsonResponse(['message' => 'No data provided'], Response::HTTP_BAD_REQUEST);
-        }
-
-        // Use deserialize with object_to_populate to update the existing entity.
-        /** @var User $user */
+        // Hydrate the existing user entity object using object_to_populate context configuration
         $serializer->deserialize(
-            $jsonContent,
+            $request->getContent(),
             User::class,
             'json',
             ['object_to_populate' => $user]
         );
 
-        // Validate the updated entity based on constraints defined in User.php
+        // Enforce entity rules validation post-hydration
         $errors = $validator->validate($user);
-        if ($errors->count() > 0) {
-            $jsonErrors = $serializer->serialize($errors, 'json');
-            return new JsonResponse($jsonErrors, Response::HTTP_BAD_REQUEST, [], true);
+        if (count($errors) > 0) {
+            return new JsonResponse($serializer->serialize($errors, 'json'), Response::HTTP_BAD_REQUEST, [], true);
         }
-        // Persist the changes to the database
-        $em->persist($user);
+
         $em->flush();
 
-        // Serialize the single User object into JSON
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => ['user:read']]);
-
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:detail']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
-    #[Route('/users/{id}', name: 'app_user_delete', methods: ['DELETE'])]
+    /**
+     * Remove a user record from the catalog.
+     */
+    #[Route('/{id}', name: 'app_user_delete', methods: ['DELETE'])]
     #[IsGranted('CAN_DELETE_USER', subject: 'user')]
-    public function deleteUser(
-        User $user,
-        EntityManagerInterface $em
-    ): JsonResponse {
-        // Remove the User entity from the database
+    public function deleteUser(User $user, EntityManagerInterface $em): JsonResponse
+    {
         $em->remove($user);
-
-        // Execute the DELETE query in the database
         $em->flush();
 
-        // Returns a clean HTTP 204 No Content response to confirm successful deletion
         return new JsonResponse(null, Response::HTTP_NO_CONTENT);
     }
 }
