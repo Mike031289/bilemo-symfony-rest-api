@@ -88,7 +88,7 @@ final class UserController extends AbstractController
     #[IsGranted('CAN_SEE_USER', subject: 'user')]
     public function getUserDetail(User $user, SerializerInterface $serializer): JsonResponse
     {
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' =>'user:detail']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
@@ -117,7 +117,7 @@ final class UserController extends AbstractController
         $em->persist($user);
         $em->flush();
 
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:detail']);
         return new JsonResponse($jsonUser, Response::HTTP_CREATED, [], true);
     }
 
@@ -149,7 +149,7 @@ final class UserController extends AbstractController
 
         $em->flush();
 
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:read']);
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:detail']);
         return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
     }
 
