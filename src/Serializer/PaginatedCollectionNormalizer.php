@@ -25,7 +25,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         // 1. Isolate the incoming metadata layout configuration to safely append nested links
         $meta = $object['meta'];
 
-        // 2. Inject nested hypermedia controls for the Client object inside the meta context envelope
+        // 2. Inject nested hypermedia controls for the Client object inside the meta context envelope if present
         if (isset($meta['client']) && is_array($meta['client'])) {
             $meta['client']['_links'] = [
                 'self' => [
@@ -48,6 +48,9 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
 
         $route = $request->attributes->get('_route');
 
+        // Preserve any existing query parameters (e.g., search or custom filters) except active page/limit bounds
+        $queryParams = $request->query->all();
+
         // Extract pagination parameters safely from the updated 'meta' configuration array
         $currentPage = (int) $meta['current_page'];
         $totalPages = (int) $meta['total_pages'];
@@ -56,16 +59,16 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         // 5. Build absolute root-level HATEOAS pagination links matching Richardson Maturity Level 3
         $normalizedData['_links'] = [
             'first' => [
-                'href' => $this->router->generate($route, ['page' => 1, 'limit' => $limit], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate($route, array_merge($queryParams, ['page' => 1, 'limit' => $limit]), UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'next' => $currentPage < $totalPages ? [
-                'href' => $this->router->generate($route, ['page' => $currentPage + 1, 'limit' => $limit], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate($route, array_merge($queryParams, ['page' => $currentPage + 1, 'limit' => $limit]), UrlGeneratorInterface::ABSOLUTE_URL)
             ] : null,
             'prev' => $currentPage > 1 ? [
-                'href' => $this->router->generate($route, ['page' => $currentPage - 1, 'limit' => $limit], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate($route, array_merge($queryParams, ['page' => $currentPage - 1, 'limit' => $limit]), UrlGeneratorInterface::ABSOLUTE_URL)
             ] : null,
             'last' => [
-                'href' => $this->router->generate($route, ['page' => $totalPages, 'limit' => $limit], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate($route, array_merge($queryParams, ['page' => $totalPages, 'limit' => $limit]), UrlGeneratorInterface::ABSOLUTE_URL)
             ],
         ];
 
