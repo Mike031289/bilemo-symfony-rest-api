@@ -65,7 +65,6 @@ class User
     #[ORM\ManyToOne(targetEntity: Client::class, inversedBy: 'users')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     #[Assert\NotNull(message: "L'utilisateur doit obligatoirement être rattaché à un client.")]
-    #[Groups(['client:read'])] // Triggers nested normalization safely when 'client:read' group is explicitly supplied
     private ?Client $client = null;
 
     public function getId(): ?int
