@@ -19,6 +19,7 @@ class ProductRepository extends ServiceEntityRepository
 
     /**
      * Fetches a paginated slice of available products matching controller naming expectations.
+     * Uses Doctrine Result Cache to drastically reduce recurring SQL workload.
      *
      * @return Product[]
      */
@@ -26,19 +27,22 @@ class ProductRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('p')
             ->setFirstResult(($page - 1) * $limit) // Offset boundary calculation
-            ->setMaxResults($limit)                // Strict range limits
+            ->setMaxResults($limit) // Strict range limits
             ->getQuery()
+            ->enableResultCache(3600) // Caches SQL query results for 1 hour
             ->getResult();
     }
 
     /**
      * Computes total catalog record capacity for pagination metadata blocks.
+     * Uses Doctrine Result Cache to optimize recurring aggregate count statements.
      */
     public function countAllProducts(): int
     {
         return (int) $this->createQueryBuilder('p')
             ->select('COUNT(p.id)')
             ->getQuery()
+            ->enableResultCache(3600) // Caches total count framework for 1 hour
             ->getSingleScalarResult();
     }
 }
