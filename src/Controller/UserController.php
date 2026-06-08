@@ -21,7 +21,7 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class UserController extends AbstractController
 {
     /**
-     * Fetch a paginated list of users linked to the authenticated B2B client.
+     * Fetch a paginated list of users linked to the authenticated B2B client with HTTP Caching.
      */
     #[Route('', name: 'app_user_list', methods: ['GET'])]
     public function getUserList(
@@ -29,15 +29,13 @@ final class UserController extends AbstractController
         UserRepository $userRepository,
         SerializerInterface $serializer,
         PaginatedCollectionNormalizer $paginatedNormalizer
-    ): JsonResponse {
+    ): Response {
         // Extract pagination query parameters with default fallbacks
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 5);
 
         // SECURITY ANTI-DOS: Prevent clients from requesting an abusive limit amount
-        if ($limit > 50) {
-            $limit = 50;
-        }
+        $limit = $limit > 50 ? 50 : $limit;
 
         // Force positive integers for page and limit parameters
         $page = $page < 1 ? 1 : $page;
@@ -45,6 +43,20 @@ final class UserController extends AbstractController
 
         /** @var Client $currentClient */
         $currentClient = $this->getUser();
+
+        // Generate a unique cache fingerprint (ETag) based on client identity and pagination boundaries
+        $etag = md5('users_client_' . $currentClient->getId() . '_page_' . $page . '_limit_' . $limit);
+
+        // Initialize empty HTTP Response and configure validation cache keys
+        $response = new Response();
+        $response->setEtag($etag);
+        $response->setPublic();
+
+        // Check if the resource footprint matches the client's 'If-None-Match' header
+        if ($response->isNotModified($request)) {
+            // Early bypass: Return HTTP 304 Not Modified immediately to skip heavy logic execution
+            return $response;
+        }
 
         // Fetch custom paginated dataset from the repository layer
         $paginatedData = $userRepository->findPaginatedUsersByClient($currentClient, $page, $limit);
@@ -56,8 +68,7 @@ final class UserController extends AbstractController
         $totalItems = $paginatedData['total'] ?? $userRepository->countByClient($currentClient);
         $totalPages = (int) ceil($totalItems / $limit);
 
-        // 1. Serialize the data envelope using 'user:read' for data (ignoring nested client duplication)
-        // while including 'client:read' explicitly for the global metadata block context
+        // Serialize the data envelope using 'user:read' for data while including 'client:read' explicitly for metadata
         $serializedData = $serializer->serialize([
             'meta' => [
                 'current_page' => $page,
@@ -71,25 +82,50 @@ final class UserController extends AbstractController
             'groups' => ['user:read', 'client:read']
         ]);
 
-        // 2. Decode the JSON back into a native array structure to safely inject root-level links
+        // Decode the JSON back into a native array structure to safely inject root-level links
         $arrayData = json_decode($serializedData, true);
 
-        // 3. Explicitly execute the PaginatedCollectionNormalizer to inject collection and client hypermedia controls
+        // Explicitly execute the PaginatedCollectionNormalizer to inject collection and client hypermedia controls
         $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
-        // 4. Return the fully compliant HATEOAS collection response
-        return new JsonResponse($finalPayload, Response::HTTP_OK);
+        // Populate response configuration with content payload, content-type, and expiration rules
+        $response->setContent(json_encode($finalPayload));
+        $response->headers->set('Content-Type', 'application/json');
+        $response->setMaxAge(3600); // Instruct cache layers to trust this payload for 1 hour
+
+        return $response;
     }
 
     /**
-     * Retrieve details of a single user.
+     * Retrieve details of a single user with HTTP Caching.
      */
     #[Route('/{id}', name: 'app_user_detail', methods: ['GET'])]
     #[IsGranted('CAN_SEE_USER', subject: 'user')]
-    public function getUserDetail(User $user, SerializerInterface $serializer): JsonResponse
+    public function getUserDetail(User $user, Request $request, SerializerInterface $serializer): Response
     {
-        $jsonUser = $serializer->serialize($user, 'json', ['groups' =>'user:detail']);
-        return new JsonResponse($jsonUser, Response::HTTP_OK, [], true);
+        // Generate a unique cache fingerprint (ETag) using entity properties or ID hash
+        $etag = md5('user_detail_' . $user->getId());
+
+        // Initialize empty HTTP Response and configure validation cache keys
+        $response = new Response();
+        $response->setEtag($etag);
+        $response->setPublic();
+
+        // Check if the resource footprint matches the client's 'If-None-Match' header
+        if ($response->isNotModified($request)) {
+            // Early bypass: Return HTTP 304 Not Modified immediately
+            return $response;
+        }
+
+        // Process serialization context payload only upon cache miss state
+        $jsonUser = $serializer->serialize($user, 'json', ['groups' => 'user:detail']);
+
+        // Populate response data footprint and set expiration lifecycle rules
+        $response->setContent($jsonUser);
+        $response->headers->set('Content-Type', 'application/json');
+        $response->setMaxAge(3600);
+
+        return $response;
     }
 
     /**
