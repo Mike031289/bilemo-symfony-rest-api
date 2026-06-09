@@ -1,0 +1,19 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: BileMo B2B API
+            description: Premium Mobile Product Catalog and Client Management REST API.
+            version: 1.0.0
+        components:
+            securitySchemes:
+                BearerAuth:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - BearerAuth: []
+    areas:
+        path_patterns:
+            - ^/products
+            - ^/users
+            - ^/profile
