@@ -9,7 +9,7 @@ security:
             entity:
                 class: App\Entity\Client
                 property: username
-  
+
     # Firewalls configuration (Order is critical!)
     firewalls:
         dev:
@@ -37,9 +37,11 @@ security:
 
     # Access control rules (Only the first matching rule is applied)
     access_control:
-        # Login authentication endpoint must be publicly accessible
-        - { path: ^/login_check, roles: PUBLIC_ACCESS }
-        # All other API resources require an authenticated ROLE_USER
+        # 1. Routes totalement publiques (Pas de token requis)
+        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+
+        # 2. Périmètre API globalement sécurisé
         - { path: ^/, roles: ROLE_USER }
 
 when@test:
