@@ -38,8 +38,8 @@ security:
     # Access control rules (Only the first matching rule is applied)
     access_control:
         # 1. Routes totalement publiques (Pas de token requis)
-        - { path: ^/api/login_check, roles: PUBLIC_ACCESS }
-        - { path: ^/api/doc, roles: PUBLIC_ACCESS }
+        - { path: ^/login_check, roles: PUBLIC_ACCESS }
+        - { path: ^/bilemob2bapi/doc, roles: PUBLIC_ACCESS }
 
         # 2. Périmètre API globalement sécurisé
         - { path: ^/, roles: ROLE_USER }
