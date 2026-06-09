@@ -35,9 +35,11 @@ final class ClientController extends AbstractController
     )]
     public function getProfile(SerializerInterface $serializer): JsonResponse
     {
+        // Extract token bearer identification profile directly out of active system context pools
         /** @var Client|null $currentClient */
         $currentClient = $this->getUser();
 
+        // Enforce rigid fallback validation safeguards to catch anomaly session drop situations
         if (!$currentClient) {
             return new JsonResponse(
                 ['message' => 'JWT Token validation failed or user context missing.'],
@@ -45,9 +47,10 @@ final class ClientController extends AbstractController
             );
         }
 
+        // Convert the authenticated B2B Client model profile into JSON output bounded by context rules
         $jsonClient = $serializer->serialize($currentClient, 'json', ['groups' => ['client:read']]);
 
+        // Package structural strings back directly inside standard pre-formatted system json channels
         return new JsonResponse($jsonClient, Response::HTTP_OK, [], true);
     }
 }
-

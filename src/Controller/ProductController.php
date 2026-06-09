@@ -59,7 +59,7 @@ final class ProductController extends AbstractController
                 new OA\Property(
                     property: 'data',
                     type: 'array',
-                    items: new OA\Items(ref: new Model(type: Product::class, groups: ['product:read']))
+                    items: new OA\Items(ref: new Model(type: Product::class, groups: ['product:read'], name: 'ProductListItem'))
                 ),
                 new OA\Property(property: '_links', type: 'object', properties: [
                     new OA\Property(property: 'self', type: 'string', example: '/products?page=1&limit=5'),
@@ -74,30 +74,40 @@ final class ProductController extends AbstractController
         PaginatedCollectionNormalizer $paginatedNormalizer,
         Request $request
     ): Response {
+        // Extract string values safely converting data structures tokens directly to local integers variables
         $page = $request->query->getInt('page', 1);
         $limit = $request->query->getInt('limit', 5);
 
+        // SECURITY ANTI-DOS: Truncate oversized query ranges to avoid high-volume payload memory saturation
         $limit = $limit > 50 ? 50 : $limit;
+
+        // Assert parameters maintain clean numeric baseline scales defaults parameters
         $page = $page < 1 ? 1 : $page;
         $limit = $limit < 1 ? 5 : $limit;
 
+        // Generate cache fingerprint matching distinct slice pagination keys structures values markers
         $etag = md5('products_list_page_' . $page . '_limit_' . $limit);
 
+        // Configure standard HTTP Response caching state variables descriptors
         $response = new Response();
         $response->setEtag($etag);
         $response->setPublic();
 
+        // Compare conditional HTTP header metadata structures constraints against incoming parameters indicators
         if ($response->isNotModified($request)) {
+            // Early bypass execution state: Avoid repeating expensive queries sequences, return status 304
             return $response;
         }
 
         /** @var Client $currentClient */
         $currentClient = $this->getUser();
 
+        // Query catalog repository infrastructure boundaries objects data indices vectors
         $products = $productRepository->findPaginatedProducts($page, $limit);
         $totalItems = $productRepository->countAllProducts();
         $totalPages = (int) ceil($totalItems / $limit);
 
+        // Transform model instances into raw string formats using targeted contextual rules strategies groups configurations
         $serializedData = $serializer->serialize([
             'meta' => [
                 'current_page' => $page,
@@ -109,12 +119,16 @@ final class ProductController extends AbstractController
             'data' => $products
         ], 'json', ['groups' => ['product:read', 'client:read']]);
 
+        // Break down raw strings back into processing native arrays to injection operations adapters handles
         $arrayData = json_decode($serializedData, true);
+
+        // Process standard array schemas data structural components embedding HATEOAS navigations root keys elements
         $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
+        // Package content data streams back into client channels attaching proxy expiration policies rules
         $response->setContent(json_encode($finalPayload));
         $response->headers->set('Content-Type', 'application/json');
-        $response->setMaxAge(3600);
+        $response->setMaxAge(3600); // Instruct external caching layers to hold this payload state invariant for 1 hour
 
         return $response;
     }
@@ -137,7 +151,7 @@ final class ProductController extends AbstractController
     #[OA\Response(
         response: 200,
         description: 'Success - Returns the localized single product detail entity model',
-        content: new OA\JsonContent(ref: new Model(type: Product::class, groups: ['product:detail']))
+        content: new OA\JsonContent(ref: new Model(type: Product::class, groups: ['product:detail'], name: 'ProductDetail'))
     )]
     #[OA\Response(
         response: 404,
@@ -148,18 +162,24 @@ final class ProductController extends AbstractController
         Request $request,
         SerializerInterface $serializer
     ): Response {
+        // Calculate validation cache ETag signatures mapping explicit instance identifiers tracks
         $etag = md5('product_detail_' . $product->getId());
 
+        // Allocate empty transmission response components tracking explicit cache state controls
         $response = new Response();
         $response->setEtag($etag);
         $response->setPublic();
 
+        // Evaluate validation status protocols matching incoming browser header vectors configurations
         if ($response->isNotModified($request)) {
+            // Early escape route execution: Terminate process, rendering 304 code immediately
             return $response;
         }
 
+        // Delegate conversion processes down into internal core Engines targeting detailed group models schemas
         $jsonProduct = $serializer->serialize($product, 'json', ['groups' => ['product:detail']]);
 
+        // Setup outbound envelope metrics variables
         $response->setContent($jsonProduct);
         $response->headers->set('Content-Type', 'application/json');
         $response->setMaxAge(3600);
@@ -167,3 +187,4 @@ final class ProductController extends AbstractController
         return $response;
     }
 }
+
