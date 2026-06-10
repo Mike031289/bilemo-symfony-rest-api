@@ -21,6 +21,12 @@ class ClientRepository extends ServiceEntityRepository implements PasswordUpgrad
 
     /**
      * Used to upgrade (rehash) the user's password automatically over time.
+     * This method is called by the security system whenever a user logs in and their password needs to be rehashed according to the current hashing algorithm.
+      *
+      * @param PasswordAuthenticatedUserInterface $user The user whose password is being upgraded
+      * @param string $newHashedPassword The new hashed password that should be set on the user
+      *
+      * @throws UnsupportedUserException If the provided user is not an instance of Client
      */
     public function upgradePassword(PasswordAuthenticatedUserInterface $user, string $newHashedPassword): void
     {

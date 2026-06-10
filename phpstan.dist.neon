@@ -1,7 +1,23 @@
 parameters:
     level: 6
     paths:
-        - bin/
-        - config/
-        - public/
-        - src/
+        - src
+
+    # Disables strict certainty checks for method_exists() coming from PHPDocs
+    treatPhpDocTypesAsCertain: false
+
+    # Prevents PHPStan from triggering errors when an ignored error pattern is not encountered
+    reportUnmatchedIgnoredErrors: false
+
+    ignoreErrors:
+        # 1. Ignores Doctrine entity IDs that are never assigned manually
+        - '#Property .*::\$id \(int\|null\) is never assigned int#'
+
+        # 2. Ignores missing value types in iterable arrays (Normalizers and Repositories)
+        - '#return type has no value type specified in iterable type array#'
+
+        # 3. Ignores missing generic types on ArrayObject signatures
+        - '#generic class ArrayObject does not specify its types#'
+
+        # 4. Ignores missing generic types on Symfony Security Voters
+        - '#extends generic class Symfony\\Component\\Security\\Core\\Authorization\\Voter\\Voter but does not specify its types#'

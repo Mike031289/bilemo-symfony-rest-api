@@ -75,7 +75,7 @@ class AppFixtures extends Fixture
             $product->setBrand($brand)
                 ->setModel($faker->words(2, true))
                 ->setDescription($faker->paragraph(3))
-                ->setPrice($faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
+                ->setPrice((string)$faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
                 ->setStock($faker->numberBetween(5, 150))
                 ->setColor($faker->safeColorName)
                 ->setStorage($faker->randomElement(['128 Go', '256 Go', '512 Go']))
