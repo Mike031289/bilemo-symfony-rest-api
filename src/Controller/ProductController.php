@@ -1,4 +1,5 @@
 <?php
+
 // src/Controller/ProductController.php
 
 namespace App\Controller;
@@ -187,4 +188,3 @@ final class ProductController extends AbstractController
         return $response;
     }
 }
-

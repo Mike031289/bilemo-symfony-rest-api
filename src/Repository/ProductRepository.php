@@ -1,4 +1,5 @@
 <?php
+
 // src/Repository/ProductRepository.php
 
 namespace App\Repository;

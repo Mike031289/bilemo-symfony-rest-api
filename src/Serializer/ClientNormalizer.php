@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/ClientNormalizer.php
 
 namespace App\Serializer;
@@ -19,7 +20,8 @@ class ClientNormalizer implements NormalizerInterface
         private readonly NormalizerInterface $normalizer,
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
      * Transforms a Client entity into an array structure enriched with profile-level HATEOAS links.

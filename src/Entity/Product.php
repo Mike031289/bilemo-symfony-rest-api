@@ -1,4 +1,5 @@
 <?php
+
 // src/Entity/Product.php
 
 namespace App\Entity;

@@ -1,4 +1,5 @@
 <?php
+
 // src/Security/Voter/UserVoter.php
 
 namespace App\Security\Voter;

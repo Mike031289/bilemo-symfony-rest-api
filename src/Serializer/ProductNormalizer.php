@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/ProductNormalizer.php
 
 namespace App\Serializer;
@@ -19,7 +20,8 @@ class ProductNormalizer implements NormalizerInterface
         private readonly NormalizerInterface $normalizer,
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
      * Transforms a single Product entity object into an array structure enriched with standardized HATEOAS links.

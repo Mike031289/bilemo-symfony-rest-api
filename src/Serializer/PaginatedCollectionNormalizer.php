@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/PaginatedCollectionNormalizer.php
 
 namespace App\Serializer;
@@ -15,7 +16,8 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
     public function __construct(
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
      * Normalizes the collection wrapper structure by appending root-level and nested meta HATEOAS links.
