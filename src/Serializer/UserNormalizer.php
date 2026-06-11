@@ -43,7 +43,7 @@ class UserNormalizer implements NormalizerInterface
 
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
-
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
