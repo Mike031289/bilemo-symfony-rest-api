@@ -43,7 +43,8 @@ class UserNormalizer implements NormalizerInterface
 
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
-            return (array) $normalizedData;
+
+            return $normalizedData;
         }
 
         // 2. Define standard item links (Self always maps back to its precise singular resource URI)
@@ -69,7 +70,8 @@ class UserNormalizer implements NormalizerInterface
             ];
         }
 
-        return (array) $normalizedData;
+        /** @var array<string, mixed> $normalizedData */
+        return $normalizedData;
     }
 
     /**

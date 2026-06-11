@@ -48,6 +48,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         // 4. Retrieve the current request context to compute target routing dynamically
         $request = $this->requestStack->getCurrentRequest();
         if (!$request) {
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
@@ -77,6 +78,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
             ],
         ];
 
+        /** @var array<string, mixed> $normalizedData */
         return $normalizedData;
     }
 

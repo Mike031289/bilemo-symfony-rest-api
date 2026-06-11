@@ -45,6 +45,7 @@ class ClientNormalizer implements NormalizerInterface
         // 2. Safeguard execution context against missing HTTP request footprints
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
@@ -61,6 +62,7 @@ class ClientNormalizer implements NormalizerInterface
             ]
         ];
 
+        /** @var array<string, mixed> $normalizedData */
         return $normalizedData;
     }
 

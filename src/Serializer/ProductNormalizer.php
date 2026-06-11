@@ -43,7 +43,8 @@ class ProductNormalizer implements NormalizerInterface
 
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
-            return (array) $normalizedData;
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
+            return $normalizedData;
         }
 
         // 2. Define standard item links (Self always maps back to its precise singular resource URI)
@@ -63,7 +64,8 @@ class ProductNormalizer implements NormalizerInterface
             ];
         }
 
-        return (array) $normalizedData;
+        /** @var array<string, mixed> $normalizedData */
+        return $normalizedData;
     }
 
     public function supportsNormalization(mixed $data, ?string $format = null, array $context = []): bool
