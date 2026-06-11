@@ -38,7 +38,7 @@ class AppFixtures extends Fixture
 
             // Generate a clean slug-like username (e.g., "sfr-telecom")
             // Clean up unwanted characters like commas or dots from company names
-            $cleanName = preg_replace('/[^A-Za-z0-9\- ]/', '', $companyName);
+            $cleanName = (string) preg_replace('/[^A-Za-z0-9\- ]/', '', $companyName);
             $username = strtolower(str_replace(' ', '-', $cleanName));
 
             $client->setUsername($username)
@@ -71,17 +71,17 @@ class AppFixtures extends Fixture
             $brand = $faker->randomElement($this->phoneBrands);
 
             // Fetch a random client reference from our freshly created client list
+            /** @var Client $randomClient */
             $randomClient = $faker->randomElement($clients);
 
             $product->setBrand((string) $brand)
                 ->setModel((string) $faker->words(2, true))
                 ->setDescription((string) $faker->paragraph(3))
-                ->setPrice($faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
+                ->setPrice((string) $faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
                 ->setStock($faker->numberBetween(5, 150))
-                ->setColor($faker->safeColorName)
+                ->setColor((string) $faker->safeColorName)
                 ->setStorage((string) $faker->randomElement(['128 Go', '256 Go', '512 Go']))
                 ->setCreatedAt(new \DateTimeImmutable())
-                /** @var Client $randomClient */
                 ->setClient($randomClient); // Establish the mandatory ManyToOne relationship
 
             $manager->persist($product);

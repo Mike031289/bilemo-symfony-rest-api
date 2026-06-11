@@ -48,7 +48,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
             return $normalizedData;
         }
 
-        $route = $request->attributes->get('_route');
+        $route = (string)$request->attributes->get('_route');
 
         // Preserve any existing query parameters (e.g., search or custom filters) except active page/limit bounds
         $queryParams = $request->query->all();
