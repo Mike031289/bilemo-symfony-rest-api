@@ -26,8 +26,8 @@ class UserNormalizer implements NormalizerInterface
     /**
      * @param mixed $object
      * @param string|null $format
-     * @param array $context
-     * @return array|string|int|float|bool|\ArrayObject|null
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
@@ -63,7 +63,7 @@ class UserNormalizer implements NormalizerInterface
         ];
 
         // 3. Inject B2B Client contextual pointer if the relation is defined on the entity object
-        if (method_exists((string) $object, 'getClient') && (string)$object->getClient()) {
+        if ($object->getClient()) {
             $normalizedData['_links']['client'] = [
                 'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ];

@@ -33,7 +33,7 @@ class ProductRepository extends ServiceEntityRepository
             ->getQuery()
             ->enableResultCache(3600) // Caches SQL query results for 1 hour
             ->getResult();
-            
+
         return $result;
     }
 
