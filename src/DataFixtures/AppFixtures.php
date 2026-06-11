@@ -74,8 +74,11 @@ class AppFixtures extends Fixture
             /** @var Client $randomClient */
             $randomClient = $faker->randomElement($clients);
 
+            /** @var string $modelName */
+            $modelName = $faker->words(2, true);
+
             $product->setBrand((string) $brand)
-                ->setModel((string) $faker->words(2, true))
+                ->setModel($modelName)
                 ->setDescription((string) $faker->paragraph(3))
                 ->setPrice((string) $faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
                 ->setStock($faker->numberBetween(5, 150))

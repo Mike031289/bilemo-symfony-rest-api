@@ -24,9 +24,10 @@ class ClientNormalizer implements NormalizerInterface
     }
 
     /**
-     * Transforms a Client entity into an array structure enriched with profile-level HATEOAS links.
-     *
-     * @param Client $object
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {

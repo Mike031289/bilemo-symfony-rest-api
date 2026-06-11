@@ -23,7 +23,7 @@ class UserRepository extends ServiceEntityRepository
      * Fetches a paginated list of users belonging to a specific B2B client.
      * Uses Doctrine Result Cache to optimize database performance.
      *
-     * @return array
+     * @return array<int, User>
      */
     public function findPaginatedUsersByClient(Client $client, int $page, int $limit): array
     {

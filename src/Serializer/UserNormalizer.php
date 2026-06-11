@@ -24,9 +24,10 @@ class UserNormalizer implements NormalizerInterface
     }
 
     /**
-     * Transforms a single User entity object into an array structure enriched with standardized HATEOAS links.
-     *
-     * @param User $object The User entity instance to map.
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {

@@ -24,9 +24,10 @@ class ProductNormalizer implements NormalizerInterface
     }
 
     /**
-     * Transforms a single Product entity object into an array structure enriched with standardized HATEOAS links.
-     *
-     * @param Product $object
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {

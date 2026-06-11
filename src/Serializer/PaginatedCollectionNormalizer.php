@@ -18,9 +18,12 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         private readonly RequestStack $requestStack
     ) {
     }
-
+    
     /**
-     * Normalizes the collection wrapper structure by appending root-level and nested meta HATEOAS links.
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
