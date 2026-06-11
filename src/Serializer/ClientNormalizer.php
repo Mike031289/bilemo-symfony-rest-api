@@ -26,11 +26,16 @@ class ClientNormalizer implements NormalizerInterface
     /**
      * @param mixed $object
      * @param string|null $format
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
+     * @param array $context
+     * @return array|string|int|float|bool|\ArrayObject|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
+        // ENforce type safety and prevent normalization of unsupported objects
+        if (!$object instanceof Client) {
+            throw new \InvalidArgumentException('The object must be an instance of Client.');
+        }
+
         // Prevent infinite recursion loops during downstream normalization cascades
         $context[self::class . '_ALREADY_CALLED'] = true;
 

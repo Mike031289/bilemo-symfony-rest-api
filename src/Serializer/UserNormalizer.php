@@ -26,11 +26,16 @@ class UserNormalizer implements NormalizerInterface
     /**
      * @param mixed $object
      * @param string|null $format
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
+     * @param array $context
+     * @return array|string|int|float|bool|\ArrayObject|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
+        //force type safety and prevent normalization of unsupported objects
+        if (!$object instanceof User) {
+            throw new \InvalidArgumentException('The object must be an instance of User.');
+        }
+
         $context[self::class . '_ALREADY_CALLED'] = true;
 
         // 1. Delegate core properties normalization to the native platform ObjectNormalizer
@@ -38,33 +43,33 @@ class UserNormalizer implements NormalizerInterface
 
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
-            return $normalizedData;
+            return (array) $normalizedData;
         }
 
         // 2. Define standard item links (Self always maps back to its precise singular resource URI)
         $normalizedData['_links'] = [
             'self' => [
-                'href' => $this->router->generate('app_user_detail', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate('app_user_detail', ['id' => (int)$object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'users' => [
                 'href' => $this->router->generate('app_user_list', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'update' => [
-                'href' => $this->router->generate('app_user_edit', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate('app_user_edit', ['id' => (int)$object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'delete' => [
-                'href' => $this->router->generate('app_user_delete', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate('app_user_delete', ['id' => (int)$object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
             ]
         ];
 
         // 3. Inject B2B Client contextual pointer if the relation is defined on the entity object
-        if (method_exists($object, 'getClient') && $object->getClient()) {
+        if (method_exists((string) $object, 'getClient') && (string)$object->getClient()) {
             $normalizedData['_links']['client'] = [
                 'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ];
         }
 
-        return $normalizedData;
+        return (array) $normalizedData;
     }
 
     /**

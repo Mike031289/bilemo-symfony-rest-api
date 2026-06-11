@@ -18,12 +18,12 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         private readonly RequestStack $requestStack
     ) {
     }
-    
+
     /**
      * @param mixed $object
      * @param string|null $format
-     * @param array<string, mixed> $context
-     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
+     * @param array $context
+     * @return array|string|int|float|bool|\ArrayObject|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {

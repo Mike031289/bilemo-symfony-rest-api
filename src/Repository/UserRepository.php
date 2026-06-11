@@ -27,7 +27,8 @@ class UserRepository extends ServiceEntityRepository
      */
     public function findPaginatedUsersByClient(Client $client, int $page, int $limit): array
     {
-        return (array) $this->createQueryBuilder('u')
+        /** @var array<int, User> $result */
+        $result = $this->createQueryBuilder('u')
             ->andWhere('u.client = :client')
             ->setParameter('client', $client)
             ->setFirstResult(($page - 1) * $limit)
@@ -35,6 +36,8 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->enableResultCache(3600) // Caches SQL results for 1 hour (3600 seconds)
             ->getResult();
+
+        return $result;
     }
 
     /**
