@@ -1,4 +1,5 @@
 <?php
+
 // src/Repository/UserRepository.php
 
 namespace App\Repository;
@@ -21,10 +22,13 @@ class UserRepository extends ServiceEntityRepository
     /**
      * Fetches a paginated list of users belonging to a specific B2B client.
      * Uses Doctrine Result Cache to optimize database performance.
+     *
+     * @return array<int, User>
      */
     public function findPaginatedUsersByClient(Client $client, int $page, int $limit): array
     {
-        return $this->createQueryBuilder('u')
+        /** @var array<int, User> $result */
+        $result = $this->createQueryBuilder('u')
             ->andWhere('u.client = :client')
             ->setParameter('client', $client)
             ->setFirstResult(($page - 1) * $limit)
@@ -32,15 +36,19 @@ class UserRepository extends ServiceEntityRepository
             ->getQuery()
             ->enableResultCache(3600) // Caches SQL results for 1 hour (3600 seconds)
             ->getResult();
+
+        return $result;
     }
 
     /**
      * Counts the total number of users belonging to a specific B2B client.
      * Uses Doctrine Result Cache to optimize aggregate counts.
+     *
+     * @return int
      */
     public function countByClient(Client $client): int
     {
-        return $this->createQueryBuilder('u')
+        return (int) $this->createQueryBuilder('u')
             ->select('count(u.id)')
             ->andWhere('u.client = :client')
             ->setParameter('client', $client)

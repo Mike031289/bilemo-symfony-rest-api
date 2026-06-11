@@ -7,7 +7,7 @@ use Symfony\Component\HttpKernel\HttpCache\Store;
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
 
 return static function (array $context) {
-    $kernel = new Kernel($context['APP_ENV'], (bool) $context['APP_DEBUG']);
+    $kernel = new Kernel((string) $context['APP_ENV'], (bool) $context['APP_DEBUG']);
 
     // Enable Symfony's built-in Gateway Cache (Reverse Proxy) when running in production environment.
     // This intercepts cached HTTP payloads before booting heavy framework structures or database layers.

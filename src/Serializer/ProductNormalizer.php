@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/ProductNormalizer.php
 
 namespace App\Serializer;
@@ -19,15 +20,22 @@ class ProductNormalizer implements NormalizerInterface
         private readonly NormalizerInterface $normalizer,
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
-     * Transforms a single Product entity object into an array structure enriched with standardized HATEOAS links.
-     *
-     * @param Product $object
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
+        //force type safety and prevent normalization of unsupported objects
+        if (!$object instanceof Product) {
+            throw new \InvalidArgumentException('The object must be an instance of Product.');
+        }
+
         $context[self::class . '_ALREADY_CALLED'] = true;
 
         // 1. Delegate core properties normalization to the native platform ObjectNormalizer
@@ -35,29 +43,28 @@ class ProductNormalizer implements NormalizerInterface
 
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
-        // 2. Extract routing signature context to adapt hypermedia links appropriately
-        $currentRoute = $request->attributes->get('_route');
-
-        // 3. Define standard item links (Self always maps back to its precise singular resource URI)
+        // 2. Define standard item links (Self always maps back to its precise singular resource URI)
         $normalizedData['_links'] = [
             'self' => [
-                'href' => $this->router->generate('app_product_detail', ['id' => $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
+                'href' => $this->router->generate('app_product_detail', ['id' => (int) $object->getId()], UrlGeneratorInterface::ABSOLUTE_URL)
             ],
             'products' => [
                 'href' => $this->router->generate('app_product_list', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ]
         ];
 
-        // 4. Inject B2B Client contextual pointer if the relation is mapped and defined on the entity object
-        if (method_exists($object, 'getClient') && $object->getClient()) {
+        // 3. Inject B2B Client contextual pointer if the relation is mapped and defined on the entity object
+        if ($object->getClient()) {
             $normalizedData['_links']['client'] = [
                 'href' => $this->router->generate('app_client_profile', [], UrlGeneratorInterface::ABSOLUTE_URL)
             ];
         }
 
+        /** @var array<string, mixed> $normalizedData */
         return $normalizedData;
     }
 

@@ -1,4 +1,5 @@
 <?php
+
 // src/Controller/UserController.php
 
 namespace App\Controller;
@@ -110,7 +111,7 @@ final class UserController extends AbstractController
         $users = $paginatedData['results'] ?? $paginatedData;
 
         // Calculate metadata limits safely by implementing fallbacks to raw counts if structured indexes are missing
-        $totalItems = $paginatedData['total'] ?? $userRepository->countByClient($currentClient);
+        (int)$totalItems = $paginatedData['total'] ?? $userRepository->countByClient($currentClient);
         $totalPages = (int) ceil($totalItems / $limit);
 
         // Process data entity serialization using specific scopes context rules groups mapping configuration
@@ -134,7 +135,7 @@ final class UserController extends AbstractController
         $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
         // Populate response body content buffers and assign standard HTTP cache longevity rules properties
-        $response->setContent(json_encode($finalPayload));
+        $response->setContent(json_encode($finalPayload, JSON_THROW_ON_ERROR));
         $response->headers->set('Content-Type', 'application/json');
         $response->setMaxAge(3600); // Allow shared and edge caches to store this response payload for 1 hour
 
@@ -229,8 +230,15 @@ final class UserController extends AbstractController
         /** @var User $user */
         $user = $serializer->deserialize($request->getContent(), User::class, 'json');
 
+        /** IMPORTANT SECURITY NOTE:
+         * The client association is automatically derived from the authenticated session context.
+         * @var Client $curentClient
+         * This prevents malicious actors from assigning users to other clients by manipulating the payload.
+         */
+        $curentClient = $this->getUser();
+
         // B2B ISOLATION LAYER: Enforce automated multi-tenant binding tracking the active session Client scope owner
-        $user->setClient($this->getUser());
+        $user->setClient($curentClient);
 
         // Validate entity assertion rules constraints assigned over model field definitions
         $errors = $validator->validate($user);

@@ -1,4 +1,5 @@
 <?php
+
 // src/Security/Voter/UserVoter.php
 
 namespace App\Security\Voter;
@@ -18,7 +19,7 @@ final class UserVoter extends Voter
     {
         // The voter is triggered only if the attribute matches one of our constants
         // and if the subject is an instance of the User entity
-        return in_array($attribute, [self::VIEW, self::EDIT, self::DELETE])
+        return in_array($attribute, [self::VIEW, self::EDIT, self::DELETE], true)
             && $subject instanceof User;
     }
 

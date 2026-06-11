@@ -1,4 +1,5 @@
 <?php
+
 // src/Repository/ProductRepository.php
 
 namespace App\Repository;
@@ -21,21 +22,26 @@ class ProductRepository extends ServiceEntityRepository
      * Fetches a paginated slice of available products matching controller naming expectations.
      * Uses Doctrine Result Cache to drastically reduce recurring SQL workload.
      *
-     * @return Product[]
+     * @return array<int, Product>
      */
     public function findPaginatedProducts(int $page, int $limit): array
     {
-        return $this->createQueryBuilder('p')
+        /** @var array<int, Product> $result */
+        $result = $this->createQueryBuilder('p')
             ->setFirstResult(($page - 1) * $limit) // Offset boundary calculation
             ->setMaxResults($limit) // Strict range limits
             ->getQuery()
             ->enableResultCache(3600) // Caches SQL query results for 1 hour
             ->getResult();
+
+        return $result;
     }
 
     /**
      * Computes total catalog record capacity for pagination metadata blocks.
      * Uses Doctrine Result Cache to optimize recurring aggregate count statements.
+     *
+     * @return int
      */
     public function countAllProducts(): int
     {

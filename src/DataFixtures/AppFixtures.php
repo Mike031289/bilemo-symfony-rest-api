@@ -1,4 +1,5 @@
 <?php
+
 // src/DataFixtures/AppFixtures.php
 
 namespace App\DataFixtures;
@@ -33,11 +34,11 @@ class AppFixtures extends Fixture
         // ===================================================
         for ($c = 1; $c <= 5; $c++) {
             $client = new Client();
-            $companyName = $faker->company;
+            $companyName = (string) $faker->company;
 
             // Generate a clean slug-like username (e.g., "sfr-telecom")
             // Clean up unwanted characters like commas or dots from company names
-            $cleanName = preg_replace('/[^A-Za-z0-9\- ]/', '', $companyName);
+            $cleanName = (string) preg_replace('/[^A-Za-z0-9\- ]/', '', $companyName);
             $username = strtolower(str_replace(' ', '-', $cleanName));
 
             $client->setUsername($username)
@@ -70,15 +71,19 @@ class AppFixtures extends Fixture
             $brand = $faker->randomElement($this->phoneBrands);
 
             // Fetch a random client reference from our freshly created client list
+            /** @var Client $randomClient */
             $randomClient = $faker->randomElement($clients);
 
-            $product->setBrand($brand)
-                ->setModel($faker->words(2, true))
-                ->setDescription($faker->paragraph(3))
-                ->setPrice($faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
+            /** @var string $modelName */
+            $modelName = $faker->words(2, true);
+
+            $product->setBrand((string) $brand)
+                ->setModel($modelName)
+                ->setDescription((string) $faker->paragraph(3))
+                ->setPrice((string) $faker->randomFloat(2, 299, 1299)) // Price between 299€ and 1299€
                 ->setStock($faker->numberBetween(5, 150))
-                ->setColor($faker->safeColorName)
-                ->setStorage($faker->randomElement(['128 Go', '256 Go', '512 Go']))
+                ->setColor((string) $faker->safeColorName)
+                ->setStorage((string) $faker->randomElement(['128 Go', '256 Go', '512 Go']))
                 ->setCreatedAt(new \DateTimeImmutable())
                 ->setClient($randomClient); // Establish the mandatory ManyToOne relationship
 

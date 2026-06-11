@@ -1,4 +1,5 @@
 <?php
+
 // src/EventSubscriber/ExceptionSubscriber.php
 
 namespace App\EventSubscriber;

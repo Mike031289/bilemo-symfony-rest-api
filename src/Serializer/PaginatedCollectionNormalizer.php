@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/PaginatedCollectionNormalizer.php
 
 namespace App\Serializer;
@@ -15,10 +16,14 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
     public function __construct(
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
-     * Normalizes the collection wrapper structure by appending root-level and nested meta HATEOAS links.
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
@@ -43,10 +48,11 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
         // 4. Retrieve the current request context to compute target routing dynamically
         $request = $this->requestStack->getCurrentRequest();
         if (!$request) {
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
-        $route = $request->attributes->get('_route');
+        $route = (string)$request->attributes->get('_route');
 
         // Preserve any existing query parameters (e.g., search or custom filters) except active page/limit bounds
         $queryParams = $request->query->all();
@@ -72,6 +78,7 @@ class PaginatedCollectionNormalizer implements NormalizerInterface
             ],
         ];
 
+        /** @var array<string, mixed> $normalizedData */
         return $normalizedData;
     }
 

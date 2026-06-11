@@ -1,4 +1,5 @@
 <?php
+
 // src/Serializer/ClientNormalizer.php
 
 namespace App\Serializer;
@@ -19,15 +20,22 @@ class ClientNormalizer implements NormalizerInterface
         private readonly NormalizerInterface $normalizer,
         private readonly UrlGeneratorInterface $router,
         private readonly RequestStack $requestStack
-    ) {}
+    ) {
+    }
 
     /**
-     * Transforms a Client entity into an array structure enriched with profile-level HATEOAS links.
-     *
-     * @param Client $object
+     * @param mixed $object
+     * @param string|null $format
+     * @param array<string, mixed> $context
+     * @return array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null
      */
     public function normalize(mixed $object, ?string $format = null, array $context = []): array|string|int|float|bool|\ArrayObject|null
     {
+        // ENforce type safety and prevent normalization of unsupported objects
+        if (!$object instanceof Client) {
+            throw new \InvalidArgumentException('The object must be an instance of Client.');
+        }
+
         // Prevent infinite recursion loops during downstream normalization cascades
         $context[self::class . '_ALREADY_CALLED'] = true;
 
@@ -37,6 +45,7 @@ class ClientNormalizer implements NormalizerInterface
         // 2. Safeguard execution context against missing HTTP request footprints
         $request = $this->requestStack->getCurrentRequest();
         if (!$request || !is_array($normalizedData)) {
+            /** @var array<string, mixed>|string|int|float|bool|\ArrayObject<string, mixed>|null $normalizedData */
             return $normalizedData;
         }
 
@@ -53,6 +62,7 @@ class ClientNormalizer implements NormalizerInterface
             ]
         ];
 
+        /** @var array<string, mixed> $normalizedData */
         return $normalizedData;
     }
 
