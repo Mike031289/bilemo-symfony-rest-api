@@ -127,7 +127,7 @@ final class ProductController extends AbstractController
         $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
         // Package content data streams back into client channels attaching proxy expiration policies rules
-        $response->setContent(json_encode($finalPayload));
+        $response->setContent(json_encode($finalPayload, JSON_THROW_ON_ERROR));
         $response->headers->set('Content-Type', 'application/json');
         $response->setMaxAge(3600); // Instruct external caching layers to hold this payload state invariant for 1 hour
 

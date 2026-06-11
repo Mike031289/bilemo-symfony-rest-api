@@ -135,7 +135,7 @@ final class UserController extends AbstractController
         $finalPayload = $paginatedNormalizer->normalize($arrayData, 'json');
 
         // Populate response body content buffers and assign standard HTTP cache longevity rules properties
-        $response->setContent(json_encode($finalPayload));
+        $response->setContent(json_encode($finalPayload, JSON_THROW_ON_ERROR));
         $response->headers->set('Content-Type', 'application/json');
         $response->setMaxAge(3600); // Allow shared and edge caches to store this response payload for 1 hour
 

@@ -99,7 +99,7 @@ class Client implements UserInterface, PasswordAuthenticatedUserInterface
      */
     public function getUserIdentifier(): string
     {
-        return (string) $this->username;
+        return (string) $this->username ?? throw new \LogicException('Username cannot be empty.');
     }
 
     /**

@@ -26,7 +26,7 @@ class ProductRepository extends ServiceEntityRepository
      */
     public function findPaginatedProducts(int $page, int $limit): array
     {
-        return $this->createQueryBuilder('p')
+        return (array) $this->createQueryBuilder('p')
             ->setFirstResult(($page - 1) * $limit) // Offset boundary calculation
             ->setMaxResults($limit) // Strict range limits
             ->getQuery()

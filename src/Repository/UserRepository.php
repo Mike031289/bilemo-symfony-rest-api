@@ -27,7 +27,7 @@ class UserRepository extends ServiceEntityRepository
      */
     public function findPaginatedUsersByClient(Client $client, int $page, int $limit): array
     {
-        return $this->createQueryBuilder('u')
+        return (array) $this->createQueryBuilder('u')
             ->andWhere('u.client = :client')
             ->setParameter('client', $client)
             ->setFirstResult(($page - 1) * $limit)
@@ -45,7 +45,7 @@ class UserRepository extends ServiceEntityRepository
      */
     public function countByClient(Client $client): int
     {
-        return $this->createQueryBuilder('u')
+        return (int) $this->createQueryBuilder('u')
             ->select('count(u.id)')
             ->andWhere('u.client = :client')
             ->setParameter('client', $client)
