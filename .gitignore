@@ -12,17 +12,17 @@
 .env.dev.local
 .env.test.local
 .env.prod.local
-.env.dev
 ###< Environment configuration files ###
 
-###> OS & IDEs (Keep repository clean) ###
-.DS_Store
-Thumbs.db
-/.idea/
-/.vscode/
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-###< OS & IDEs ###
+###> lexik/jwt-authentication-bundle ###
+/config/jwt/*.pem
+###< lexik/jwt-authentication-bundle ###
+
+###> friendsofphp/php-cs-fixer ###
+/.php-cs-fixer.php
+/.php-cs-fixer.cache
+###< friendsofphp/php-cs-fixer ###
+
+###> phpstan/phpstan ###
+phpstan.dist.neon
+###< phpstan/phpstan ###
